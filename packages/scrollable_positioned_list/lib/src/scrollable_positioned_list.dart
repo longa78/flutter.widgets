@@ -245,8 +245,7 @@ class ItemScrollController {
   }
 }
 
-class _ScrollablePositionedListState extends State<ScrollablePositionedList>
-    with TickerProviderStateMixin {
+class _ScrollablePositionedListState extends State<ScrollablePositionedList> with TickerProviderStateMixin {
   /// Details for the primary (active) [ListView].
   var primary = _ListDisplayDetails(const ValueKey('Ping'));
 
@@ -263,10 +262,10 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
   @override
   void initState() {
     super.initState();
-    ItemPosition? initialPosition = PageStorage.of(context)!.readState(context);
+    ItemPosition? initialPosition =
+        PageStorage.of(context)!.readState(context, identifier: "_ScrollablePositionedListState");
     primary.target = initialPosition?.index ?? widget.initialScrollIndex;
-    primary.alignment =
-        initialPosition?.itemLeadingEdge ?? widget.initialAlignment;
+    primary.alignment = initialPosition?.itemLeadingEdge ?? widget.initialAlignment;
     if (widget.itemCount > 0 && primary.target > widget.itemCount - 1) {
       primary.target = widget.itemCount - 1;
     }
@@ -283,10 +282,8 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
 
   @override
   void dispose() {
-    primary.itemPositionsNotifier.itemPositions
-        .removeListener(_updatePositions);
-    secondary.itemPositionsNotifier.itemPositions
-        .removeListener(_updatePositions);
+    primary.itemPositionsNotifier.itemPositions.removeListener(_updatePositions);
+    secondary.itemPositionsNotifier.itemPositions.removeListener(_updatePositions);
     super.dispose();
   }
 
@@ -452,12 +449,10 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
   }) async {
     final direction = index > primary.target ? 1 : -1;
     final itemPosition = primary.itemPositionsNotifier.itemPositions.value
-        .firstWhereOrNull(
-            (ItemPosition itemPosition) => itemPosition.index == index);
+        .firstWhereOrNull((ItemPosition itemPosition) => itemPosition.index == index);
     if (itemPosition != null) {
       // Scroll directly.
-      final localScrollAmount = itemPosition.itemLeadingEdge *
-          primary.scrollController.position.viewportDimension;
+      final localScrollAmount = itemPosition.itemLeadingEdge * primary.scrollController.position.viewportDimension;
       await primary.scrollController.animateTo(
           primary.scrollController.offset +
               localScrollAmount -
@@ -465,28 +460,22 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
           duration: duration,
           curve: curve);
     } else {
-      final scrollAmount = _screenScrollCount *
-          primary.scrollController.position.viewportDimension;
+      final scrollAmount = _screenScrollCount * primary.scrollController.position.viewportDimension;
       final startCompleter = Completer<void>();
       final endCompleter = Completer<void>();
       startAnimationCallback = () {
         SchedulerBinding.instance!.addPostFrameCallback((_) {
           startAnimationCallback = () {};
 
-          opacity.parent = _opacityAnimation(opacityAnimationWeights).animate(
-              AnimationController(vsync: this, duration: duration)..forward());
+          opacity.parent = _opacityAnimation(opacityAnimationWeights)
+              .animate(AnimationController(vsync: this, duration: duration)..forward());
           secondary.scrollController.jumpTo(-direction *
-              (_screenScrollCount *
-                      primary.scrollController.position.viewportDimension -
-                  alignment *
-                      secondary.scrollController.position.viewportDimension));
+              (_screenScrollCount * primary.scrollController.position.viewportDimension -
+                  alignment * secondary.scrollController.position.viewportDimension));
 
-          startCompleter.complete(primary.scrollController.animateTo(
-              primary.scrollController.offset + direction * scrollAmount,
-              duration: duration,
-              curve: curve));
-          endCompleter.complete(secondary.scrollController
-              .animateTo(0, duration: duration, curve: curve));
+          startCompleter.complete(primary.scrollController
+              .animateTo(primary.scrollController.offset + direction * scrollAmount, duration: duration, curve: curve));
+          endCompleter.complete(secondary.scrollController.animateTo(0, duration: duration, curve: curve));
         });
       };
       setState(() {
@@ -532,29 +521,20 @@ class _ScrollablePositionedListState extends State<ScrollablePositionedList>
     final startOpacity = 0.0;
     final endOpacity = 1.0;
     return TweenSequence<double>(<TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(tween: ConstantTween<double>(startOpacity), weight: opacityAnimationWeights[0]),
       TweenSequenceItem<double>(
-          tween: ConstantTween<double>(startOpacity),
-          weight: opacityAnimationWeights[0]),
-      TweenSequenceItem<double>(
-          tween: Tween<double>(begin: startOpacity, end: endOpacity),
-          weight: opacityAnimationWeights[1]),
-      TweenSequenceItem<double>(
-          tween: ConstantTween<double>(endOpacity),
-          weight: opacityAnimationWeights[2]),
+          tween: Tween<double>(begin: startOpacity, end: endOpacity), weight: opacityAnimationWeights[1]),
+      TweenSequenceItem<double>(tween: ConstantTween<double>(endOpacity), weight: opacityAnimationWeights[2]),
     ]);
   }
 
   void _updatePositions() {
     final itemPositions = primary.itemPositionsNotifier.itemPositions.value
-        .where((ItemPosition position) =>
-            position.itemLeadingEdge < 1 && position.itemTrailingEdge > 0);
+        .where((ItemPosition position) => position.itemLeadingEdge < 1 && position.itemTrailingEdge > 0);
     if (itemPositions.isNotEmpty) {
-      PageStorage.of(context)!.writeState(
-          context,
-          itemPositions.reduce((value, element) =>
-              value.itemLeadingEdge < element.itemLeadingEdge
-                  ? value
-                  : element));
+      PageStorage.of(context)!.writeState(context,
+          itemPositions.reduce((value, element) => value.itemLeadingEdge < element.itemLeadingEdge ? value : element),
+          identifier: "_ScrollablePositionedListState");
     }
     widget.itemPositionsNotifier?.itemPositions.value = itemPositions;
   }
